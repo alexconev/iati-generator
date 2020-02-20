@@ -3,12 +3,12 @@ package info.snakea.artefacts.attributes;
 import info.snakea.utils.StringUtil;
 
 public enum ShirtSize {
-    S("S"),
-    M("M"),
-    L("L"),
-    XL("XL"),
+    XXXL("XXXL"),
     XXL("XXL"),
-    XXXL("3XL"),
+    XL("XL"),
+    L("L"),
+    M("M"),
+    S("S"),
     NONE("None");
 
     private String label;
@@ -19,7 +19,7 @@ public enum ShirtSize {
 
     public static ShirtSize getSize(String s) {
         for (ShirtSize ss : ShirtSize.values()) {
-            if (StringUtil.containsIgnoreCase(s.replace(" ", ""), ss.label)) {
+            if (StringUtil.containsIgnoreCase(s.trim().replace(" ", ""), ss.label)) {
                 return ss;
             }
         }

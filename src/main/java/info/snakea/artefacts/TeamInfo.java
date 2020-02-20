@@ -2,6 +2,7 @@ package info.snakea.artefacts;
 
 import info.snakea.Config;
 import info.snakea.artefacts.attributes.Country;
+import info.snakea.artefacts.attributes.Seniority;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +20,8 @@ public class TeamInfo {
     private Person depLeader;
 
     private List<Person> contestants;
+
+    private Seniority seniority;
 
     public Country getCountry() {
         return nationality;
@@ -38,7 +41,7 @@ public class TeamInfo {
     }
 
     public String getBgTeamName() {
-        String name = Config.bgTeamNames.get(enTeamName);
+        String name = Config.bgTeamNames.get(enTeamName.trim());
         return name == null ? bgTeamName : name;
     }
 
@@ -77,5 +80,13 @@ public class TeamInfo {
                getLeader().getEnName() + "\n" +
                getDepLeader().getEnName() + "\n" +
                getContestants().stream().map(Person::getEnName).collect(Collectors.joining(SEPARATOR)) + "\n";
+    }
+
+    public Seniority getSeniority() {
+        return seniority;
+    }
+
+    public void setSeniority(Seniority seniority) {
+        this.seniority = seniority;
     }
 }

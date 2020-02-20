@@ -5,7 +5,7 @@ import info.snakea.artefacts.attributes.ShirtSize;
 
 import info.snakea.utils.StringUtil;
 
-public class Person {
+public class Person implements Comparable<Person> {
     private String enFirstName;
     private String enLastName;
 
@@ -14,6 +14,10 @@ public class Person {
 
     private ShirtSize shirtSize;
     private OS operatingSystem;
+
+    private String dateOfBirth;
+
+    private String country;
 
     private static final String CLEANUP_STRING = "\\p{C}";
 
@@ -79,5 +83,26 @@ public class Person {
     @Override
     public int hashCode() {
         return getEnName().hashCode();
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    @Override
+    public int compareTo(Person o) {
+        return this.getEnName().compareTo(o.getEnName());
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
     }
 }

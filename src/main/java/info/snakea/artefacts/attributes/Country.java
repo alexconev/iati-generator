@@ -14,6 +14,7 @@ public enum Country {
     SRB("http://iati2017.iati-shu.org/wp-content/uploads/2017/11/serbia.jpg", "Serbia", "Сърбия"),
     CH("http://iati-shu.org/wp-content/uploads/2018/10/switzerland.jpg", "Switzerland", "Швейцария"),
     UA("http://iati2017.iati-shu.org/wp-content/uploads/2017/11/ukraine.jpg", "Ukraine", "Украйна"),
+    KK("http://iati2017.iati-shu.org/wp-content/uploads/2017/11/kazakhstan.jpg", "Kazakhstan", "Казахстан"),
     NONE("NaN", "none", "none");
 
     private String flagURL;

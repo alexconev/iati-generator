@@ -1,6 +1,7 @@
 package info.snakea.utils;
 
 import info.snakea.Config;
+import info.snakea.artefacts.attributes.Country;
 import info.snakea.artefacts.attributes.OS;
 import info.snakea.artefacts.Person;
 import info.snakea.artefacts.TeamInfo;
@@ -12,6 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static info.snakea.Config.STATISTICS_FILE;
@@ -22,33 +24,45 @@ public class SummaryTablesUtil {
         super();
     }
 
-    public static void generateLeadersTable(List<TeamInfo> teams) {
+    public static void generateLeadersTable(List<TeamInfo> teams, List<Person> guests) {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Leaders");
 
-        Map<String, List<Person>> countryLeads = new HashMap<>();
-        teams.forEach(t -> {
-            String country = t.getCountry().getEnName();
-            countryLeads.putIfAbsent(country, new ArrayList<>());
-            countryLeads.get(country).add(t.getLeader());
-            countryLeads.get(country).add(t.getDepLeader());
+        Map<Person, List<String>> countryLeads = new TreeMap<>();
+        teams.forEach(e -> {
+            List<String> tmp = new ArrayList<>();
+            tmp.add(e.getCountry().getEnName());
+            tmp.add(e.getEnTeamName());
+            tmp.add("Leader");
+            countryLeads.put(e.getLeader(), tmp);
+
+            if (e.getDepLeader() != null && !countryLeads.containsKey(e.getDepLeader())) {
+                tmp.add(2, "Deputy Leader");
+                countryLeads.put(e.getDepLeader(), tmp);
+            }
         });
 
+        guests.forEach(e -> {
+            List<String> tmp = new ArrayList<>();
+            tmp.add(e.getCountry());
+            tmp.add("");
+            tmp.add("Guest");
+            countryLeads.put(e, tmp);
+//            if (!"Bulgaria".equals(e.getCountry())) {
+//                countryLeads.put(e, tmp);
+//            }
+        });
 
-        int rowNumber = 0;
-        for (Map.Entry<String, List<Person>> country : countryLeads.entrySet()) {
-            for (Person lead : country.getValue()) {
-                if (!lead.hasEmptyName()) {
-                    Row row = sheet.createRow(rowNumber);
-                    row.createCell(0).setCellValue(lead.getEnName().split(" ")[0]);
-                    row.createCell(1).setCellValue(lead.getEnName().split(" ")[1]);
-                    row.createCell(2).setCellValue(country.getKey());
-                    rowNumber++;
-                }
-            }
-        }
+        AtomicInteger rowNumber = new AtomicInteger();
+        countryLeads.forEach((k, v) -> {
+            Row row = sheet.createRow(rowNumber.getAndIncrement());
+            row.createCell(0).setCellValue(k.getEnName());
+            row.createCell(1).setCellValue(v.get(2));
+            row.createCell(2).setCellValue(v.get(0));
+            row.createCell(3).setCellValue(v.get(1));
+        });
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             sheet.autoSizeColumn(i);
         }
 
@@ -60,9 +74,9 @@ public class SummaryTablesUtil {
         }
     }
 
-    public static void generateStatistics(List<TeamInfo> juniors, List<TeamInfo> seniors, List<TeamInfo> teams) {
+    public static void generateStatistics(List<TeamInfo> juniors, List<TeamInfo> seniors, List<TeamInfo> teams, List<Person> guests) {
         Map<OS, List<Person>> osNumbers = new EnumMap<>(OS.class);
-        Map<ShirtSize, List<Person>> shirtsNumbers = new EnumMap<>(ShirtSize.class);
+        Map<ShirtSize, Set<Person>> shirtsNumbers = new EnumMap<>(ShirtSize.class);
         StringBuilder sb = new StringBuilder();
 
         for (TeamInfo team : teams) {
@@ -70,19 +84,39 @@ public class SummaryTablesUtil {
                 osNumbers.putIfAbsent(contestant.getOperatingSystem(), new ArrayList<>());
                 osNumbers.get(contestant.getOperatingSystem()).add(contestant);
 
-                shirtsNumbers.putIfAbsent(contestant.getShirtSize(), new ArrayList<>());
+                shirtsNumbers.putIfAbsent(contestant.getShirtSize(), new HashSet<>());
                 shirtsNumbers.get(contestant.getShirtSize()).add(contestant);
+            }
+
+            if (team.getLeader() != null) {
+                shirtsNumbers.putIfAbsent(team.getLeader().getShirtSize(), new HashSet<>());
+                shirtsNumbers.get(team.getLeader().getShirtSize()).add(team.getLeader());
+            }
+
+            if (team.getDepLeader() != null) {
+                shirtsNumbers.putIfAbsent(team.getDepLeader().getShirtSize(), new HashSet<>());
+                shirtsNumbers.get(team.getDepLeader().getShirtSize()).add(team.getDepLeader());
             }
         }
 
+        guests.forEach(e -> {
+            shirtsNumbers.putIfAbsent(e.getShirtSize(), new HashSet<>());
+            shirtsNumbers.get(e.getShirtSize()).add(e);
+        });
+
         sb.append("=== JUNIORS ===\n");
+        //sb.append(getStatistics(juniors.stream().filter(e -> e.getCountry() != Country.BG).collect(Collectors.toList())));
         sb.append(getStatistics(juniors));
 
         sb.append("\n=== SENIORS ===\n");
+        //sb.append(getStatistics(seniors.stream().filter(e -> e.getCountry() != Country.BG).collect(Collectors.toList())));
         sb.append(getStatistics(seniors));
 
         sb.append("\n=== ALL ===\n");
+        //sb.append(getStatistics(teams.stream().filter(e -> e.getCountry() != Country.BG).collect(Collectors.toList())));
         sb.append(getStatistics(teams));
+
+        sb.append("\nNumber of guests: ").append(guests.size()).append("\n");
 
         addOsStat(osNumbers, sb);
 
@@ -108,7 +142,7 @@ public class SummaryTablesUtil {
         }
     }
 
-    private static void addShirtsStat(Map<ShirtSize, List<Person>> shirtsNumbers, StringBuilder sb) {
+    private static void addShirtsStat(Map<ShirtSize, Set<Person>> shirtsNumbers, StringBuilder sb) {
         sb.append("\n=== SHIRT SIZES ===\n");
         for (ShirtSize o : ShirtSize.values()) {
             if (shirtsNumbers.containsKey(o)) {
@@ -132,7 +166,14 @@ public class SummaryTablesUtil {
         sb.append("Number of contestants: ").append(numberOfContestants).append("\n");
 
         Set<Person> leaders = new HashSet<>();
-        teams.forEach(t -> { leaders.add(t.getLeader()); leaders.add(t.getDepLeader()); });
+        teams.forEach(t -> {
+            if (t.getLeader() != null && !" ".equals(t.getLeader().getEnName())) {
+                leaders.add(t.getLeader());
+            }
+            if (t.getDepLeader() != null && !" ".equals(t.getDepLeader().getEnName())) {
+                leaders.add(t.getDepLeader());
+            }
+        });
         sb.append("Number of leaders: ").append(leaders.size()).append("\n");
 
         String listOfCountries = teams.stream()
@@ -143,5 +184,69 @@ public class SummaryTablesUtil {
         sb.append("Countries: ").append(listOfCountries).append("\n");
 
         return sb.toString();
+    }
+
+    public static void generateContestantsTable(List<TeamInfo> niors, String fileName) {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Juniors");
+
+        int rowNumber = 0;
+        for (TeamInfo team : niors) {
+            for (Person contestant : team.getContestants()) {
+                if (!contestant.hasEmptyName()) {
+                    Row row = sheet.createRow(rowNumber);
+                    row.createCell(0).setCellValue(team.getCountry().getEnName());
+                    row.createCell(1).setCellValue(team.getEnTeamName());
+                    row.createCell(2).setCellValue(contestant.getEnName());
+                    row.createCell(3).setCellValue(contestant.getOperatingSystem().name());
+                    rowNumber++;
+                }
+            }
+        }
+
+        for (int i = 0; i < 4; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        try(FileOutputStream fileOut = new FileOutputStream(fileName)) {
+            workbook.write(fileOut);
+            workbook.close();
+        } catch (IOException e) {
+            LogUtil.LOGGER.severe(e.getMessage());
+        }
+    }
+
+    public static void generateTeamsTable(List<TeamInfo> teams) {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Participants");
+
+        int rowNumber = 0;
+        TeamInfo oldTeam = null;
+        for (TeamInfo team : teams) {
+            Row row = sheet.createRow(rowNumber);
+
+            row.createCell(0).setCellValue(team.getSeniority().name());
+            row.createCell(1).setCellValue(team.getCountry().getEnName());
+            row.createCell(2).setCellValue(team.getEnTeamName());
+            row.createCell(3).setCellValue(team.getLeader().getEnName());
+            if (team.getDepLeader() != null) {
+                row.createCell(4).setCellValue(team.getDepLeader().getEnName());
+            }
+            for (Person contestant : team.getContestants()) {
+                row.createCell(5).setCellValue(contestant.getEnName());
+                row = sheet.createRow(++rowNumber);
+            }
+        }
+
+        for (int i = 0; i < 6; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        try(FileOutputStream fileOut = new FileOutputStream(Config.TEAMS_FILE)) {
+            workbook.write(fileOut);
+            workbook.close();
+        } catch (IOException e) {
+            LogUtil.LOGGER.severe(e.getMessage());
+        }
     }
 }

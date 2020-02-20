@@ -5,6 +5,7 @@ import info.snakea.artefacts.TeamInfo;
 import info.snakea.Config;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
@@ -49,11 +50,11 @@ public class WriteUtil {
 
         String contestantStyle = getContestantStyle(team);
 
-        if (!team.getLeader().hasEmptyName()) {
+        if (team.getLeader() != null && !team.getLeader().hasEmptyName()) {
             sb.append(getPersonImageHtml(team.getLeader().getBgName(), team.getLeader().getEnName(), Config.TL_BG_TITLE, contestantStyle));
         }
 
-        if (!team.getDepLeader().hasEmptyName()) {
+        if (team.getDepLeader() != null && !team.getDepLeader().hasEmptyName()) {
             sb.append(getPersonImageHtml(team.getDepLeader().getBgName(), team.getDepLeader().getEnName(), Config.DEPTL_BG_TITLE, contestantStyle));
         }
 
@@ -83,11 +84,11 @@ public class WriteUtil {
 
         String contestantStyle = getContestantStyle(team);
 
-        if (!team.getLeader().hasEmptyName()) {
+        if (team.getLeader() != null && !team.getLeader().hasEmptyName()) {
             sb.append(getPersonImageHtml(team.getLeader().getEnName(), team.getLeader().getEnName(), Config.TL_EN_TITLE, contestantStyle));
         }
 
-        if (!team.getDepLeader().hasEmptyName()) {
+        if (team.getDepLeader() != null && !team.getDepLeader().hasEmptyName()) {
             sb.append(getPersonImageHtml(team.getDepLeader().getEnName(), team.getDepLeader().getEnName(), Config.DEPTL_EN_TITLE, contestantStyle));
         }
 
@@ -122,10 +123,10 @@ public class WriteUtil {
 
     private static String getContestantStyle(TeamInfo team) {
         int people = 0;
-        if (!team.getLeader().hasEmptyName()) {
+        if (team.getLeader() != null && !team.getLeader().hasEmptyName()) {
             people++;
         }
-        if (!team.getDepLeader().hasEmptyName()) {
+        if (team.getDepLeader() != null && !team.getDepLeader().hasEmptyName()) {
             people++;
         }
         people += team.getContestants().size();
@@ -136,7 +137,21 @@ public class WriteUtil {
 
     private static String getImagePath(String name) {
         String imagePath = Config.participantImages.get(name);
-        return imagePath == null ? Config.NO_IMAGE : Config.PATH_TO_IMAGES + imagePath;
+
+        if (imagePath == null) {
+            String imageName =  name.replace(' ', '_') + ".jpg";
+            File f = new File(Config.IMAGES_PATH + imageName);
+            if(f.exists() && !f.isDirectory()) {
+                return Config.PATH_TO_IMAGES + imageName;
+            }
+        }
+
+        if (imagePath == null) {
+            System.out.println("Missing image for: " + name);
+            return Config.NO_IMAGE;
+        } else {
+            return Config.PATH_TO_IMAGES + imagePath;
+        }
     }
 
     public static void printParticipantImagesMapKeys(TeamInfo team) {
